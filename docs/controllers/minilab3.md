@@ -27,8 +27,8 @@ Raw messages were captured from the attached hardware through CoreMIDI:
 
 | Control | Observed messages |
 | --- | --- |
-| Main encoder positive movement | `B0 72 40`, then `B0 72 41`/`42` |
-| Main encoder negative movement | `B0 72 40`, then `B0 72 3E`/`3D` |
+| Main encoder counter-clockwise movement | `B0 72 40`, then `B0 72 41`/`42` |
+| Main encoder clockwise movement | `B0 72 40`, then `B0 72 3E`/`3D` |
 | Main encoder click | press `B0 73 7F`, release `B0 73 00` |
 | Shift + main encoder click in the tested program | same `B0 73 7F`/`00` pair |
 | Shift in Arturia/User mode | press `B0 09 7F`, release `B0 09 00` |
@@ -42,8 +42,8 @@ In DAW mode the main encoder uses CC 28 (CC 29 with Shift), its click uses CC
 118 (CC 119 with Shift), and numbered knobs 1–8 use CC 86, 87, 89, 90, 110,
 111, 116, and 117. The profile accepts both sets.
 
-The runtime ignores the center value 64 and aftertouch. Values 65–127 produce
-clockwise steps and 0–63 counter-clockwise steps. A short cooldown prevents a
+The runtime ignores the center value 64 and aftertouch. Values 0–63 produce
+clockwise steps and 65–127 counter-clockwise steps. A short cooldown prevents a
 fast physical turn from flooding ChatGPT.
 
 Encoder rotation becomes `ENC_CW`/`ENC_CC`; its press and release become the

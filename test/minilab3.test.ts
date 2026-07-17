@@ -83,9 +83,9 @@ test("MiniLab 3 maps live factory-pad reports and documented CC-pad reports", as
   midi.emit([0xb0, 105, 127]);
   midi.emit([0xb0, 105, 0]);
 
-  // The centered main encoder sends 64 then a signed offset.
+  // A physical clockwise turn sends the centre followed by a lower value.
   midi.emit([0xb0, 114, 64]);
-  midi.emit([0xb0, 114, 65]);
+  midi.emit([0xb0, 114, 62]);
 
   // Main encoder click opens/selects the focused control, including models.
   midi.emit([0xb0, 115, 127]);

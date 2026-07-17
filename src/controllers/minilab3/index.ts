@@ -132,8 +132,9 @@ const MINILAB3_PROFILE = {
   },
   encoder: {
     cc: [114, 28, 29],
-    clockwise: Array.from({ length: 63 }, (_, index) => 65 + index),
-    counterClockwise: Array.from({ length: 64 }, (_, index) => index),
+    // MiniLab relative deltas run opposite to the Codex encoder event names.
+    clockwise: Array.from({ length: 64 }, (_, index) => index),
+    counterClockwise: Array.from({ length: 63 }, (_, index) => 65 + index),
     pulsesPerStep: 1,
     minStepIntervalMs: 40,
     pulseSequenceTimeoutMs: 250,

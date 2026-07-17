@@ -10,7 +10,11 @@ import { createController, listControllerIds } from "./controllers/index.js";
 import type { ControllerLogger } from "./controllers/controller-profile.js";
 import { Project2077Engine } from "./core/project2077-engine.js";
 import { UnixSocketHostTransport } from "./host/unix-socket-transport.js";
-import { launchChatGPT } from "./host/launch.js";
+import {
+  activateApplication,
+  CHATGPT_APP_BUNDLE_ENV,
+  launchChatGPT,
+} from "./host/launch.js";
 import { midi } from "./midi/index.js";
 import { listLightingPresets } from "./controllers/minilab3/spectrum/index.js";
 
@@ -84,7 +88,12 @@ async function runBridge(args: string[]): Promise<void> {
     ...(process.env.CODEX_MIDI_TOKEN === undefined ? {} : { token: process.env.CODEX_MIDI_TOKEN }),
     logger,
   });
-  const engine = new Project2077Engine(transport, controller.surface, logger);
+  const chatGPTBundle = process.env[CHATGPT_APP_BUNDLE_ENV];
+  const engine = new Project2077Engine(transport, controller.surface, logger, {
+    ...(chatGPTBundle === undefined || chatGPTBundle.length === 0
+      ? {}
+      : { activateHost: () => activateApplication(chatGPTBundle) }),
+  });
 
   let stopping = false;
   const stop = (signal: string) => {

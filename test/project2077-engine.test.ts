@@ -168,6 +168,66 @@ test("surface events become exact HID and joystick notifications", async () => {
   await engine.stop();
 });
 
+test("button presses activate the host without focusing on release or encoder turns", async () => {
+  const transport = new FakeTransport();
+  const surface = new FakeSurface();
+  let activations = 0;
+  const activationStarted = deferred<void>();
+  const finishActivation = deferred<void>();
+  const engine = new Project2077Engine(transport, surface, console, {
+    activateHost: async () => {
+      activations += 1;
+      activationStarted.resolve();
+      await finishActivation.promise;
+    },
+  });
+  await engine.start();
+  await transport.connect();
+  assert.ok(surface.sink);
+
+  const press = surface.sink.emitKey({ key: "AG00", act: 1 });
+  await activationStarted.promise;
+  const release = surface.sink.emitKey({ key: "AG00", act: 0 });
+  assert.deepEqual(transport.messages(), []);
+  finishActivation.resolve();
+  await Promise.all([press, release]);
+  await surface.sink.emitKey({ key: "ENC_CW", act: 2 });
+
+  assert.equal(activations, 1);
+  assert.deepEqual(transport.messages(), [
+    { method: "v.oai.hid", params: { k: "AG00", act: 1 } },
+    { method: "v.oai.hid", params: { k: "AG00", act: 0 } },
+    { method: "v.oai.hid", params: { k: "ENC_CW", act: 2 } },
+  ]);
+  await engine.stop();
+});
+
+test("a failed app activation never swallows the button press", async () => {
+  const transport = new FakeTransport();
+  const surface = new FakeSurface();
+  const warnings: unknown[][] = [];
+  const logger = {
+    debug() {},
+    info() {},
+    warn(...values: unknown[]) { warnings.push(values); },
+    error() {},
+  };
+  const engine = new Project2077Engine(transport, surface, logger, {
+    activateHost: async () => { throw new Error("activation failed"); },
+  });
+  await engine.start();
+  await transport.connect();
+  assert.ok(surface.sink);
+
+  await surface.sink.emitKey({ key: "AG00", act: 1 });
+
+  assert.equal(warnings.length, 1);
+  assert.deepEqual(transport.messages(), [
+    { method: "v.oai.hid", params: { k: "AG00", act: 1 } },
+  ]);
+  await engine.stop();
+});
+
 test("disconnect discards an incomplete request and unknown methods return an RPC error", async () => {
   const transport = new FakeTransport();
   const surface = new FakeSurface();

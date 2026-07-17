@@ -52,7 +52,9 @@ The current transport is versioned NDJSON over a private Unix socket. Manual
 launch uses a random per-launch token before reports are accepted; direct
 bridge mode relies on directory and socket permissions. Messages are processed
 in stream order, so no second sequence-numbering mechanism is needed. Manual
-launch removes the socket and token when ChatGPT exits.
+launch removes the socket and token when ChatGPT exits. It also passes the exact
+app bundle path to the bridge. A mapped button press activates that running app
+before its HID event is sent; releases and encoder rotation do not activate it.
 
 Host connect and disconnect callbacks are required. The bridge opens the MIDI
 controller only while a protocol-valid ChatGPT host is connected, then releases

@@ -44,10 +44,15 @@ const MAX_PENDING_REQUEST_BYTES = 256 * 1024;
 const FIRMWARE_VERSION = "0.3.0";
 type Logger = Pick<Console, "debug" | "info" | "warn" | "error">;
 
+interface Project2077EngineOptions {
+  readonly activateHost?: () => Promise<void>;
+}
+
 export class Project2077Engine implements SurfaceInputSink {
   readonly #transport: CodexHostTransport;
   readonly #surface: ControllerSurface;
   readonly #logger: Logger;
+  readonly #activateHost: (() => Promise<void>) | undefined;
   #pendingRequest: Buffer = Buffer.alloc(0);
   #lighting: CodexLightingState = emptyLightingState();
   #started = false;
@@ -60,10 +65,12 @@ export class Project2077Engine implements SurfaceInputSink {
     transport: CodexHostTransport,
     surface: ControllerSurface,
     logger: Logger = console,
+    options: Project2077EngineOptions = {},
   ) {
     this.#transport = transport;
     this.#surface = surface;
     this.#logger = logger;
+    this.#activateHost = options.activateHost;
   }
 
   async start(): Promise<void> {
@@ -112,7 +119,12 @@ export class Project2077Engine implements SurfaceInputSink {
       act: event.act,
     };
     if (event.agent !== undefined) params.ag = event.agent;
-    await this.#sendMessage({ method: "v.oai.hid", params });
+    await this.#sendMessage(
+      { method: "v.oai.hid", params },
+      event.act === 1 && this.#activateHost !== undefined
+        ? () => this.#activateHostSafely()
+        : undefined,
+    );
   }
 
   async emitJoystick(event: CodexJoystickEvent): Promise<void> {
@@ -260,8 +272,9 @@ export class Project2077Engine implements SurfaceInputSink {
     };
   }
 
-  async #sendMessage(value: unknown): Promise<void> {
+  async #sendMessage(value: unknown, beforeSend?: () => Promise<void>): Promise<void> {
     const send = async () => {
+      await beforeSend?.();
       for (const report of encodeRpcLine(value)) {
         await this.#transport.sendDeviceReport(report);
       }
@@ -269,6 +282,14 @@ export class Project2077Engine implements SurfaceInputSink {
     const queued = this.#outboundQueue.then(send, send);
     this.#outboundQueue = queued.catch(() => undefined);
     await queued;
+  }
+
+  async #activateHostSafely(): Promise<void> {
+    try {
+      await this.#activateHost?.();
+    } catch (error) {
+      this.#logger.warn("Could not bring ChatGPT to the front", error);
+    }
   }
 
   #queueSurfaceUpdate(): Promise<void> {

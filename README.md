@@ -74,6 +74,9 @@ ChatGPT, open the bridge log, or quit. To restore the previous Dock setup:
 | Main encoder | Move focus or selection |
 | Main encoder click | Open or confirm |
 
+Pressing any mapped button also brings the hooked ChatGPT window to the front
+before sending its action.
+
 Both factory pad banks work. Keyboard notes, faders, aftertouch, and unrelated
 MIDI channels are ignored.
 

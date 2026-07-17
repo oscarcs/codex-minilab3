@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
+export const CHATGPT_APP_BUNDLE_ENV = "CODEX_MINILAB_CHATGPT_APP";
 
 interface ManualLaunchOptions {
   configPath?: string;
@@ -44,7 +45,11 @@ export async function launchChatGPT(options: ManualLaunchOptions = {}): Promise<
   const bridgeArguments = [cli, "bridge", "--socket", socket];
   if (options.configPath !== undefined) bridgeArguments.push("--config", resolve(options.configPath));
 
-  const bridgeEnvironment: NodeJS.ProcessEnv = { ...process.env, CODEX_MIDI_TOKEN: token };
+  const bridgeEnvironment: NodeJS.ProcessEnv = {
+    ...process.env,
+    CODEX_MIDI_TOKEN: token,
+    [CHATGPT_APP_BUNDLE_ENV]: chatGPTBundle,
+  };
   delete bridgeEnvironment.NODE_OPTIONS;
   const bridge = spawn(process.execPath, bridgeArguments, {
     cwd: root,
@@ -122,6 +127,10 @@ export function applicationBundleForExecutable(executable: string): string {
     );
   }
   return executable.slice(0, markerIndex + ".app".length);
+}
+
+export async function activateApplication(appBundle: string): Promise<void> {
+  await execFileAsync("/usr/bin/open", ["-a", appBundle], { timeout: 1_000 });
 }
 
 export function buildLaunchServicesArguments(options: {

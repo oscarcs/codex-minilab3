@@ -73,15 +73,15 @@ keyboard-channel notes are ignored.
 | Combination | Observed pad CC | Codex key |
 | --- | ---: | --- |
 | Shift + Pad 4 | 105 | `ACT06` (Fast) |
-| Shift + Pad 5 | 106 | `ACT08` (Reject) |
-| Shift + Pad 6 | 107 | `ACT09` (Fork) |
-| Shift + Pad 7 | 108 | `ACT07` (Approve) |
-| Shift + Pad 8 | 109 | `ACT07` (Approve) |
+| Shift + Pad 5 | 106 | `ACT07` (Approve) |
+| Shift + Pad 6 | 107 | `ACT08` (Reject) |
+| Shift + Pad 7 | 108 | `ACT09` (Fork) |
 
 The bridge treats either CC 9 or CC 27 as Shift because changing programs
 while Shift is held can change which CC carries the release. Shift + Pads 1–2
 send Arturia vendor SysEx for internal controller features, and Shift + Pad 3
-changes the controller program. Those three combinations are not intercepted.
+changes the controller program. Those three combinations are not intercepted;
+Shift + Pad 8 keeps its ordinary Agent 6 mapping.
 
 ### Analog-stick layer
 

@@ -64,9 +64,9 @@ ChatGPT, open the bridge log, or quit. To restore the previous Dock setup:
 | Pad 2 | Submit |
 | Pads 3–8 | Task slots 1–6 |
 | Shift + Pad 4 | Fast |
-| Shift + Pad 5 | Reject |
-| Shift + Pad 6 | Fork |
-| Shift + Pad 7 or 8 | Approve |
+| Shift + Pad 5 | Approve |
+| Shift + Pad 6 | Reject |
+| Shift + Pad 7 | Fork |
 | Knobs 1/3 | Up |
 | Knobs 2/4 | Down |
 | Knobs 5/7 | Left |

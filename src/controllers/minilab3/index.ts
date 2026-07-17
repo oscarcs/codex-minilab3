@@ -123,10 +123,9 @@ const MINILAB3_PROFILE = {
     mapping: {
       buttons: {
         105: "ACT06", // Shift + Pad 4: Fast
-        106: "ACT08", // Shift + Pad 5: Reject
-        107: "ACT09", // Shift + Pad 6: Fork
-        108: "ACT07", // Shift + Pad 7: Approve
-        109: "ACT07", // Shift + Pad 8: Approve
+        106: "ACT07", // Shift + Pad 5: Approve
+        107: "ACT08", // Shift + Pad 6: Reject
+        108: "ACT09", // Shift + Pad 7: Fork
       },
     },
   },

@@ -70,12 +70,19 @@ test("MiniLab 3 maps live factory-pad reports and documented CC-pad reports", as
   midi.emit([0xb0, 108, 127]);
   midi.emit([0xb0, 108, 0]);
 
-  // Shift is CC 9 (or CC 27 in DAW mode) and overrides usable pads 4-8.
+  // Shift is CC 9 (or CC 27 in DAW mode) and gives Pads 4-7 the
+  // left-to-right Codex Micro command row. Pad 8 remains Agent 6.
   midi.emit([0xb0, 9, 127]);
   midi.emit([0xb0, 105, 127]);
   midi.emit([0xb0, 105, 0]);
+  midi.emit([0xb0, 106, 127]);
+  midi.emit([0xb0, 106, 0]);
+  midi.emit([0xb0, 107, 127]);
+  midi.emit([0xb0, 107, 0]);
   midi.emit([0xb0, 108, 127]);
   midi.emit([0xb0, 108, 0]);
+  midi.emit([0xb0, 109, 127]);
+  midi.emit([0xb0, 109, 0]);
   // A program change while Shift is down can move its release to CC 27.
   midi.emit([0xb0, 27, 0]);
 
@@ -127,6 +134,12 @@ test("MiniLab 3 maps live factory-pad reports and documented CC-pad reports", as
     { key: "ACT06", act: 0 },
     { key: "ACT07", act: 1 },
     { key: "ACT07", act: 0 },
+    { key: "ACT08", act: 1 },
+    { key: "ACT08", act: 0 },
+    { key: "ACT09", act: 1 },
+    { key: "ACT09", act: 0 },
+    { key: "AG05", act: 1 },
+    { key: "AG05", act: 0 },
     { key: "AG01", act: 1 },
     { key: "AG01", act: 0 },
     { key: "ENC_CW", act: 2 },

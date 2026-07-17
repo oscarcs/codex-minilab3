@@ -124,6 +124,9 @@ declaration containing its CC, direction values, pulses per step, cooldown, and
 sequence timeout. A reconnect is attempted once per second. Vendor behavior
 stays private in the controller's single `index.ts`.
 
+Profiles may request a low-frequency replay of unchanged lighting for hardware
+whose idle screensaver otherwise overrides host-controlled colors.
+
 Only `src/midi/index.ts` imports `@julusian/midi`. Its lazy `midi` object owns
 port enumeration, exact port selection, subscriptions, output, and cleanup.
 Tests may create an injected backend, but application code does not wrap the

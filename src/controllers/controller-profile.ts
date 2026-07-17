@@ -83,6 +83,8 @@ export interface MidiControllerProfile {
   readonly modifier?: MidiModifier;
   readonly joystickGesture?: JoystickGesture;
   readonly encoder?: RelativeEncoder;
+  /** Replay unchanged lighting at this interval to prevent hardware idle modes. */
+  readonly lightingRefreshIntervalMs?: number;
   createSession?(context: ControllerContext, config: Readonly<ControllerConfig>): ControllerSession;
   renderLighting?(
     state: Readonly<CodexLightingState>,

@@ -138,6 +138,7 @@ const MINILAB3_PROFILE = {
     minStepIntervalMs: 40,
     pulseSequenceTimeoutMs: 250,
   },
+  lightingRefreshIntervalMs: 60_000,
   createSession: createMiniLab3Session,
   renderLighting: renderMiniLab3Lighting,
 } satisfies MidiControllerProfile;

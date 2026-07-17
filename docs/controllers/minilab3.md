@@ -137,3 +137,7 @@ levels at roughly 30 frames per second; no samples are recorded or written to
 disk. The bridge compiles the helper into `.build/` on first launch and only
 sends a MIDI frame when its rendered RGB bytes change. macOS may require
 **Screen & System Audio Recording** permission for the Dock launcher.
+
+The bridge also replays the current OLED and pad frame once per minute. This
+keeps the MiniLab from replacing static ChatGPT colors with its Vegas Mode
+screensaver while the hooked app remains connected.

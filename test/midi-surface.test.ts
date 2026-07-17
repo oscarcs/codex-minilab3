@@ -227,6 +227,29 @@ describe("MIDI controller", () => {
     await fixture.surface.stop();
   });
 
+  test("periodically refreshes unchanged lighting and stops refreshing on shutdown", async () => {
+    jest.useFakeTimers();
+    const refreshProfile = {
+      ...profile,
+      lightingRefreshIntervalMs: 60_000,
+    } satisfies MidiControllerProfile;
+    const fixture = await startFixture(refreshProfile);
+    const lighting = emptyLightingState();
+    lighting.keys.brightness = 0.5;
+    await fixture.surface.applyLighting(lighting);
+    expect(fixture.midi.state.sent).toEqual([[0x90, 1, 64]]);
+
+    jest.advanceTimersByTime(60_000);
+    expect(fixture.midi.state.sent).toEqual([
+      [0x90, 1, 64],
+      [0x90, 1, 64],
+    ]);
+
+    await fixture.surface.stop();
+    jest.advanceTimersByTime(60_000);
+    expect(fixture.midi.state.sent).toHaveLength(2);
+  });
+
   test("reconnects and replays lighting after an output write fails", async () => {
     jest.useFakeTimers();
     const fixture = await startFixture();

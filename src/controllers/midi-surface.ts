@@ -84,6 +84,7 @@ export function createMidiSurface(
   let input: MidiInputHandle | undefined;
   let output: MidiOutputHandle | undefined;
   let reconnectTimer: ReturnType<typeof setInterval> | undefined;
+  let lightingRefreshTimer: ReturnType<typeof setInterval> | undefined;
   let connecting = false;
   let closing = false;
   let generation = 0;
@@ -121,6 +122,15 @@ export function createMidiSurface(
       await refreshConnection();
       if (sink !== undefined && generation === startedGeneration) {
         reconnectTimer = setInterval(() => void refreshConnection(), 1_000);
+        if (
+          profile.lightingRefreshIntervalMs !== undefined &&
+          profile.lightingRefreshIntervalMs > 0
+        ) {
+          lightingRefreshTimer = setInterval(
+            refreshLighting,
+            profile.lightingRefreshIntervalMs,
+          );
+        }
       }
     },
 
@@ -133,6 +143,8 @@ export function createMidiSurface(
       generation += 1;
       if (reconnectTimer !== undefined) clearInterval(reconnectTimer);
       reconnectTimer = undefined;
+      if (lightingRefreshTimer !== undefined) clearInterval(lightingRefreshTimer);
+      lightingRefreshTimer = undefined;
       closeConnection("stopped");
       sink = undefined;
     },
@@ -441,6 +453,11 @@ export function createMidiSurface(
       logger.warn(`${profile.displayName} lighting write failed; reconnecting`, error);
       closeConnection("error");
     }
+  }
+
+  function refreshLighting(): void {
+    renderedLighting.clear();
+    replayLighting();
   }
 
   function closeConnection(reason: DisconnectReason): void {

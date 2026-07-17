@@ -1,0 +1,25 @@
+# Dependencies and build output
+node_modules/
+.build/
+coverage/
+
+# Local configuration and captures
+codex-minilab3.json
+.codex-midi/
+latency-captures/
+
+# Logs and environment files
+*.log
+npm-debug.log*
+.env
+.env.*
+!.env.example
+
+# Editor and macOS files
+.DS_Store
+.AppleDouble
+.LSOverride
+.idea/
+.vscode/
+*.swp
+*~

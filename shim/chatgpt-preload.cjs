@@ -312,13 +312,69 @@ function createNodeHidProxy(realNodeHid, options = {}) {
   });
 }
 
+function createTopologyWatcherProxy(realWatcher, options = {}) {
+  if (
+    !realWatcher ||
+    typeof realWatcher.findCodexMicroInterfaces !== "function" ||
+    typeof realWatcher.watch !== "function"
+  ) {
+    throw new TypeError("The installed HID topology watcher API is not compatible with codex-midi");
+  }
+  const bridgeSocketPath = options.socketPath || CONFIGURED_SOCKET_PATH;
+
+  return new Proxy(realWatcher, {
+    get(target, property, receiver) {
+      if (property === "findCodexMicroInterfaces") {
+        return (...args) => {
+          const realDevices = Reflect.apply(target.findCodexMicroInterfaces, target, args);
+          if (
+            !Array.isArray(realDevices) ||
+            realDevices.length > 0 ||
+            !bridgeIsAvailable(bridgeSocketPath)
+          ) {
+            return realDevices;
+          }
+          return [...realDevices, { ...DEVICE_DESCRIPTOR }];
+        };
+      }
+      return Reflect.get(target, property, receiver);
+    },
+  });
+}
+
+function isCodexMicroTopologyWatcher(request, parent) {
+  return (
+    typeof request === "string" &&
+    /[\\/]hid[_-]topology[_-]watcher\.node$/.test(request) &&
+    parent &&
+    typeof parent.filename === "string" &&
+    /[\\/]\.vite[\\/]build[\\/]codex-micro-service-[^\\/]+\.js$/.test(parent.filename)
+  );
+}
+
 function installScopedNodeHidHook() {
   if (!isMainThread) return;
   if (!process.versions.electron || process.type !== "browser") return;
 
   const originalLoad = Module._load;
-  let proxy;
+  let nodeHidProxy;
+  let topologyWatcherProxy;
   Module._load = function codexMidiModuleLoad(request, parent, isMain) {
+    if (isCodexMicroTopologyWatcher(request, parent)) {
+      const realWatcher = Reflect.apply(originalLoad, this, [request, parent, isMain]);
+      if (topologyWatcherProxy === undefined) {
+        try {
+          topologyWatcherProxy = createTopologyWatcherProxy(realWatcher, {
+            socketPath: CONFIGURED_SOCKET_PATH,
+          });
+          log(`intercepted Codex Micro HID topology watcher at ${request}`);
+        } catch (error) {
+          log(`HID topology watcher compatibility check failed: ${error.message}`);
+          return realWatcher;
+        }
+      }
+      return topologyWatcherProxy;
+    }
     if (
       request === "node-hid" &&
       parent &&
@@ -326,9 +382,9 @@ function installScopedNodeHidHook() {
       /[\\/]@worklouder[\\/]wl-device-kit[\\/]dist[\\/]index\.js$/.test(parent.filename)
     ) {
       const realNodeHid = Reflect.apply(originalLoad, this, [request, parent, isMain]);
-      if (proxy === undefined) {
+      if (nodeHidProxy === undefined) {
         try {
-          proxy = createNodeHidProxy(realNodeHid, {
+          nodeHidProxy = createNodeHidProxy(realNodeHid, {
             socketPath: CONFIGURED_SOCKET_PATH,
             token: CONFIGURED_TOKEN,
           });
@@ -338,7 +394,7 @@ function installScopedNodeHidHook() {
           return realNodeHid;
         }
       }
-      return proxy;
+      return nodeHidProxy;
     }
     return Reflect.apply(originalLoad, this, [request, parent, isMain]);
   };

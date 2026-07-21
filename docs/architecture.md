@@ -42,7 +42,8 @@ flowchart LR
 Manual launch loads a dependency-free CommonJS preload into one ChatGPT
 process tree without modifying or re-signing ChatGPT.app. The preload:
 
-- intercepts only the Work Louder device kit's `node-hid` load;
+- intercepts only Codex Micro's native macOS discovery and Work Louder
+  `node-hid` loads;
 - adds one synthetic Project2077 descriptor;
 - delegates real HID devices and unrelated `node-hid` behavior unchanged;
 - gives a physical device with the same VID/PID precedence;

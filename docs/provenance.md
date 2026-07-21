@@ -22,6 +22,10 @@ For ChatGPT/Codex Micro interoperability, distinguish public product behavior
 from observations of the installed app's local device protocol. App build
 numbers matter because private integrations can change.
 
+ChatGPT build 26.715.61943 moved macOS Codex Micro discovery from `node-hid` to
+its scoped native topology watcher. The compatibility preload handles both
+discovery paths without bundling extracted application code or binaries.
+
 ## Allowed repository material
 
 - original bridge and profile source code;

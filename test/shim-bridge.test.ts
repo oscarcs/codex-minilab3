@@ -6,7 +6,7 @@
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { Project2077Engine } from "../src/core/project2077-engine.js";
 import { UnixSocketHostTransport } from "../src/host/unix-socket-transport.js";
 
@@ -31,6 +31,9 @@ test("scoped preload delegates real HID and carries Project2077 reports end to e
       sentinel: 42,
       scopedDevices: [{ path: "real", vendorId: 1 }],
       unrelatedDevices: [{ path: "real", vendorId: 1 }],
+      topologyScoped: true,
+      topologyWatch: "real-watch",
+      topologyDevices: [],
       realOpen: "real:real-device",
       opened: [["real-device", { nonExclusive: true }]],
       environment: { nodeOptions: retainedNodeOptions },
@@ -81,6 +84,20 @@ test("scoped preload delegates real HID and carries Project2077 reports end to e
         },
       ]);
       expect(connected.unrelatedDevices).toEqual([{ path: "real", vendorId: 1 }]);
+      expect(connected.topologyScoped).toBe(true);
+      expect(connected.topologyWatch).toBe("real-watch");
+      expect(connected.topologyDevices).toEqual([
+        {
+          path: "codex-midi://project2077",
+          vendorId: 0x303a,
+          productId: 0x8360,
+          manufacturer: "Work Louder",
+          product: "Codex Micro",
+          usagePage: 0xff00,
+          usage: 1,
+          release: 0x0100,
+        },
+      ]);
       expect(connected.realOpen).toBe("real:real-device");
       expect(connected.opened).toEqual([["real-device", { nonExclusive: true }]]);
       expect(connected.writeLength).toBe(64);
@@ -94,6 +111,9 @@ test("scoped preload delegates real HID and carries Project2077 reports end to e
           productId: 0x8360,
           usagePage: 0xff00,
         },
+      ]);
+      expect(connected.physicalTopologyDevices).toEqual([
+        { path: "physical-project2077", usagePage: 0xff00, release: 0x0100 },
       ]);
       expect(connected.environment).toEqual({ nodeOptions: retainedNodeOptions });
       await waitFor(() => lifecycle.starts === 1 && lifecycle.stops === 1);
@@ -116,12 +136,18 @@ async function writeNodeFixture(directory: string) {
     "wl-device-kit",
     "dist",
   );
+  const buildDirectory = join(directory, ".vite", "build");
+  const topologyWatcher = join(directory, "native", "hid_topology_watcher.node");
+  const codexMicroService = join(buildDirectory, "codex-micro-service-test.js");
   await mkdir(nodeHid, { recursive: true });
   await mkdir(workLouder, { recursive: true });
+  await mkdir(buildDirectory, { recursive: true });
+  await mkdir(join(directory, "native"), { recursive: true });
   await writeFile(
     electronMain,
     `Object.defineProperty(process.versions, "electron", { value: "test", configurable: true });
 Object.defineProperty(process, "type", { value: "browser", configurable: true });
+require.extensions[".node"] = require.extensions[".js"];
 `,
   );
   await writeFile(
@@ -150,8 +176,22 @@ const second = require("node-hid");
 module.exports = { first, second };
 `,
   );
+  await writeFile(
+    topologyWatcher,
+    `let currentDevices = [];
+module.exports = {
+  findCodexMicroInterfaces: () => currentDevices.map((device) => ({ ...device })),
+  watch: () => "real-watch",
+  setDevices: (devices) => { currentDevices = devices; },
+};
+`,
+  );
+  await writeFile(
+    codexMicroService,
+    `module.exports = require(${JSON.stringify(topologyWatcher)});\n`,
+  );
   await writeFile(runner, NODE_RUNNER);
-  return { electronMain, runner };
+  return { electronMain, runner, codexMicroService };
 }
 
 interface NodeFixtureOptions {
@@ -172,6 +212,8 @@ async function runNodeFixture(
       CODEX_MIDI_SOCKET: options.socketPath,
       CODEX_MIDI_TOKEN: options.token,
       CODEX_MIDI_TEST_MODE: options.mode,
+      CODEX_MIDI_TEST_SERVICE: fixtureServiceForRunner(runner),
+      CODEX_MIDI_TEST_WATCHER: join(dirname(runner), "native", "hid_topology_watcher.node"),
       NODE_OPTIONS: `--require=${JSON.stringify(options.electronMain)} --require=${JSON.stringify(options.preload)} --trace-warnings`,
     },
     stdout: "pipe",
@@ -196,6 +238,10 @@ async function runNodeFixture(
   return JSON.parse(stdout.trim()) as Record<string, unknown>;
 }
 
+function fixtureServiceForRunner(runner: string): string {
+  return join(dirname(runner), ".vite", "build", "codex-micro-service-test.js");
+}
+
 async function waitFor(predicate: () => boolean): Promise<void> {
   const deadline = Date.now() + 1_000;
   while (!predicate()) {
@@ -215,6 +261,8 @@ const NODE_RUNNER = String.raw`
 const realBefore = require("node-hid");
 const scoped = require("@worklouder/wl-device-kit/dist/index.js");
 const realAfter = require("node-hid");
+const realTopologyBefore = require(process.env.CODEX_MIDI_TEST_WATCHER);
+const scopedTopology = require(process.env.CODEX_MIDI_TEST_SERVICE);
 
 async function main() {
   const result = {
@@ -224,6 +272,9 @@ async function main() {
     sentinel: scoped.first.sentinel,
     scopedDevices: scoped.first.devices(),
     unrelatedDevices: realBefore.devices(),
+    topologyScoped: scopedTopology !== realTopologyBefore,
+    topologyWatch: scopedTopology.watch(() => {}),
+    topologyDevices: scopedTopology.findCodexMicroInterfaces(),
     realOpen: await scoped.first.HIDAsync.open("real-device", { nonExclusive: true }),
     opened: realBefore.opened.map((entry) => [...entry]),
     environment: {
@@ -272,6 +323,10 @@ async function main() {
       },
     ]);
     result.physicalDevices = scoped.first.devices();
+    realTopologyBefore.setDevices([
+      { path: "physical-project2077", usagePage: 0xff00, release: 0x0100 },
+    ]);
+    result.physicalTopologyDevices = scopedTopology.findCodexMicroInterfaces();
   }
 
   process.stdout.write(JSON.stringify(result));
